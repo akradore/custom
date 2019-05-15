@@ -127,8 +127,8 @@ class YZPushService(object):
         params['delivery_order_no'] = response["delivery_order_no"]
         params['retail_source'] = constants.RETAIL_SOURCE
 
-        # result = yzclient.invoke('youzan.retail.open.deliveryorder.get', '3.0.0', 'POST', params=params, files=[])
-        # response = result['response']
+        result = yzclient.invoke('youzan.retail.open.deliveryorder.get', '3.0.0', 'POST', params=params, files=[])
+        response = result['response']
 
         if response['sale_way'] != 'OFFLINE':
             return
