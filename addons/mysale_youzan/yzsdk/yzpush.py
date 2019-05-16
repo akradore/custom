@@ -55,7 +55,7 @@ class YZPushService(object):
 
         check_message = sign.app_id + params['msg'] + sign.app_secret
         md5_sign = hashlib.md5(check_message.encode('utf-8')).hexdigest()
-        return True  # or md5_sign == params['sign']
+        return md5_sign == params['sign']
 
     def youzan_retail_open_delivery_order(self, response):
         """{
@@ -178,7 +178,7 @@ class YZPushService(object):
                 'product_uom_qty': item['quantity'],
             })
 
-        # STEP 2, confirm order, state quotation to wait send
+        # STEP 2, confirm order ,change state quotation to wait send
         sale_order.action_confirm()
 
         # STEP 3, create order invoice in memory
