@@ -2,87 +2,62 @@ from . import auth
 import time
 import requests
 import hashlib
+import json
 
+from odoo.http import request
+
+from .. import constants
 ####################################
 #
 #   有赞开放平台SDK - 连锁接口处理- Python 3.0.6
-#
-#      三方库依赖: requests
+#   三方库依赖: requests
+#   有赞云平台参考文档： https://doc.youzanyun.com/doc#/content/API/1-299
 #
 ####################################
 
 class YZClient:
     def __init__(self, authorize):
+        if not isinstance(authorize, auth.Token):
+            raise ValueError('Invalid Youzan Token Instance!')
         self.auth = authorize
 
     @classmethod
     def get_default_client(cls):
-        sign = auth.Sign('c8029df22b7b925908', '5069ae7a82d4edc7aa6722e39cf81695')
-        return cls(sign)
+        token = auth.Token.DEFAULT_SETUP_TOKEN()
+        return cls(token)
 
 
-    def invoke(self, apiName, version, method, params={}, files={}):
-        http_url = 'https://open.youzan.com/api'
-        service = apiName[0: apiName.rindex('.')]
-        action = apiName[apiName.rindex('.') + 1: len(apiName)]
+    def invoke(self, apiName, version, method, params={}, files={}, access_token=None, http_url=None):
+        http_url = http_url or constants.YOUZAN_API_GETWAY
 
-        param_map = {}
-        if isinstance(self.auth, auth.Sign):
-            http_url += '/entry'
-            param_map = self.get_sign(self.auth, params)
-        else:
-            http_url += '/oauthentry'
-            param_map['access_token'] = self.auth.get_token()
-            param_map = dict(param_map.items() + params.items())
+        if not access_token:
+            access_token = request.env['res.config.settings'].get_youzan_access_token()
 
-        http_url = http_url + '/' + service + '/' + version + '/' + action
+        http_url = http_url + '/' + apiName + '/' + version + '?access_token=%s' % access_token
+        resp = self.send_request(http_url, method, params, files)
 
-        resp = self.send_request(http_url, method, param_map, files)
         if resp.status_code != 200:
             ##TODO need to notify admin
-            print(resp.status_code)
-            raise Exception('Invoke failed')
-        return resp.content
+            raise Exception('Invalid Youzan Response (status, text): %s,%s' %( resp.status_code, resp.content))
+
+        result = resp.json()
+        if not (result['code'] == 200 and result['success']):
+            ##TODO need to notify admin
+            raise Exception('Invalid Youzan Response: %s' %resp.content)
+
+        return result
 
     def send_request(self, url, method, param_map, files):
         headers_map = {
-            'User-Agent': 'X-YZ-Client 2.0.0 - Python'
+            'User-Agent': 'X-YZ-Client 3.0.0 - Python',
+            'Content-Type': 'application/json;charset=UTF-8'
         }
+
+        req_data = json.dumps(param_map)
         if method.upper() == 'GET':
-            return requests.get(url=url, params=param_map, headers=headers_map)
+            return requests.get(url=url, data=req_data, headers=headers_map)
+
         elif method.upper() == 'POST':
-            return requests.post(url=url, data=param_map, files=files, headers=headers_map)
-
-    def get_sign(self, sign, params):
-        if not isinstance(sign, auth.Sign):
-            ##TODO need to notify admin
-            raise Exception('Sign mode must specify typeof auth.Sign')
-        timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
-        format = 'json'
-        app_id = sign.get_app_id()
-        app_secret = sign.get_app_secret()
-        v = '1.0'
-        sign_method = 'md5'
-
-        param_map = {
-            'timestamp': timestamp,
-            'format': format,
-            'app_id': app_id,
-            'app_secret': app_secret,
-            'v': v,
-            'sign_method': sign_method,
-        }
-
-        param_map=dict(param_map.items() + params.items())
-        sorted_param_map = sorted(param_map.items(), key = lambda d : d[0])
-        plain_text = app_secret
-        for item in sorted_param_map:
-            plain_text += (item[0] + item[1])
-        plain_text += app_secret
-        md5 = hashlib.md5(plain_text).hexdigest()
-        param_map['sign'] = md5
-
-        return param_map
-
+            return requests.post(url=url, data=req_data, files=files, headers=headers_map)
 
 

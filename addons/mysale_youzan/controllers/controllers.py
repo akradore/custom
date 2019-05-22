@@ -19,11 +19,7 @@ class YouzanRetail(http.Controller):
 
     @classmethod
     def youzan_push_service(cls):
-
-        if not hasattr(cls, '_push_service'):
-            sign = Sign('c8029df22b7b925908', '5069ae7a82d4edc7aa6722e39cf81695')
-            cls._push_service = YZPushService(sign)
-        return cls._push_service
+        return YZPushService.DEFAULT_SETUP_PUSH_SERVICE()
 
     #
     # @http.route('/mysale_youzan/mysale_youzan/objects/', auth='public')

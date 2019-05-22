@@ -25,6 +25,8 @@
     # always loaded
     'data': [
         # 'security/ir.model.access.csv',
+        'views/res_config_settings.xml',
+        'views/cron_job.xml',
         'views/views.xml',
         'views/templates.xml',
     ],
@@ -32,4 +34,6 @@
     'demo': [
         'demo/demo.xml',
     ],
+
+    'installable': True,
 }

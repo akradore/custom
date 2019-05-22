@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="1">
+        <record forcecreate="True" id="cron_youzan_refresh_access_token" model="ir.cron">
+            <field name="name">Schedule to refresh YouZan access_token</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="active" eval="False" />
+            <field name="interval_number">3</field>
+            <field name="interval_type">days</field>
+            <field name="args" eval="'()'"/>
+            <field name="nextcall" eval="(DateTime.now() + timedelta(seconds=3600)).strftime('%Y-%m-%d 00:00:00')" />
+            <field name="numbercall">-1</field>
+            <field name="doall" eval="False"/>
+            <field name="model_id" ref="base.model_res_config_settings"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_refresh_youzan_access_token()</field>
+        </record>
+        <record forcecreate="True" id="cron_youzan_retail_order_from_last_updated" model="ir.cron">
+            <field name="name">Fetch and Create Youzan Retail Orders</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="active" eval="False" />
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="args" eval="'()'"/>
+            <field name="nextcall" eval="(DateTime.now() + timedelta(days=1)).strftime('%Y-%m-%d 00:00:00')" />
+            <field name="numbercall">-1</field>
+            <field name="doall" eval="False"/>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_youzan_retail_order_from_last_updated()</field>
+        </record>
+    </data>
+</odoo>

@@ -1,6 +1,19 @@
 
-RETAIL_SOURCE = 'odoo'
+YOUZAN_CLIENT_ID = '7e9b3f9f5eb5406820'
+YOUZAN_CLIENT_SECRET = '72c60b40e808e2e0eae7b26e2dd475ef'
+YOUZAN_AUTHORITY_ID = '42971327'
+YOUZAN_API_ADMIN_ID = '431154697'
+
+YOUZAN_API_GETWAY = 'https://open.youzanyun.com/api'
+YOUZAN_AUTHORIZE_URL = 'https://open.youzanyun.com/auth/token'
+
+RETAIL_SOURCE = 'PRINCESS_MIA'
 ORDER_FROM_YOUZAN_RETAIL = 'yz_retail'
+
+YZAPI_SCOPE_REQUIRED = (
+'multi_store', 'shop', 'item', 'trade', 'logistics', 'coupon_advanced', 'user', 'pay_qrcode', 'trade_virtual',
+'reviews', 'item_category', 'storage', 'retail_goods', 'retail_product', 'retail_stock', 'retail_supplier',
+'retail_store', 'retail_shop', 'retail_trade')
 
 """
 0:'默认值',
@@ -49,9 +62,9 @@ ORDER_FROM_YOUZAN_RETAIL = 'yz_retail'
 43:'现金支付',
 44:'组合支付',
 """
-PAYWAY_TO_JOURNAL_MAP ={
-0: 'CSH1',#'默认值',
-1: 'WEIIN',#'微信自有支付',
-2: 'ZFB',#'支付宝',
-43: 'CASH',#''现金支付',
+PAYWAY_TO_JOURNAL_MAP = {
+    0: 'CSH1',  # '默认值',
+    1: 'WEIIN',  # '微信自有支付',
+    2: 'ZFB',  # '支付宝',
+    43: 'CASH',  # ''现金支付',
 }
