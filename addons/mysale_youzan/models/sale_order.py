@@ -3,6 +3,7 @@ import datetime
 import logging
 
 from odoo import models, fields, api
+from odoo.addons.queue_job.job import job
 
 from ..yzsdk import YZClient
 from .. import constants
@@ -31,6 +32,7 @@ class SaleOrder(models.Model):
     # ref = '[buyer_id]_[buyer_phone]'
 
     @api.model
+    @job
     def create_youzan_retail_order_by_params(self, data):
         """ 6 STEPS, create a saleorder by youzan retail order
         {
@@ -233,7 +235,7 @@ class SaleOrder(models.Model):
             delivery_orders, paginator = result['data']['deliveryOrders'], result['data']['paginator']
 
             for order_data in delivery_orders:
-                self.create_youzan_retail_order_by_params(order_data)
+                self.with_delay().create_youzan_retail_order_by_params(order_data)
 
             has_next_page = paginator['page'] <= paginator['totalCount'] * 1.0 / paginator['pageSize']
             if has_next_page:

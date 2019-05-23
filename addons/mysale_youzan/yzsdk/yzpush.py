@@ -89,10 +89,10 @@ class YZPushService(object):
         if data['saleWay'] != 'OFFLINE':
             return False
 
-        sale_order = self.env['sale.order'].create_youzan_retail_order_by_params(data)
+        self.env['sale.order'].with_delay().create_youzan_retail_order_by_params(data)
 
         # TODO ,handle exception and notice admin
-        return sale_order.id
+        return
 
     def youzan_trade_order_state(self, **data):
         """{
