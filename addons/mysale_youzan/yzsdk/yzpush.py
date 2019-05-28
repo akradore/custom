@@ -40,15 +40,8 @@ class YZPushService(object):
         if not self.check_sign(self.auth, request_data):
             raise Exception('Invalid Youzan push message: %s' % request_data)
 
-        # msg_dict = {}
-        # if request_data.get('type'):
         func_type = request_data['type']
         msg_dict = json.loads(urllib.parse.unquote(request_data['msg']))
-            # dict([kv.split('=') for kv in request_data['msg'].split('&')])
-
-        # elif request_data.get('biz_type'):
-        #     func_type = request_data.get('biz_type')
-        #     msg_dict = json.loads(urllib.parse.unquote(request_data['msg']))
 
         func_type = 'youzan_%s' % func_type.lower()
         result = getattr(self, func_type)(msg_dict)  ## exec func type
@@ -67,14 +60,7 @@ class YZPushService(object):
         """
         data:
         {
-            "deliveryOrders": [
-                ...
-            ],
-            "paginator": {
-                "pageSize": 20,
-                "page": 1,
-                "totalCount": 2
-            }
+            "delivery_order_no": ...
         }
         """
         yzclient = YZClient.get_default_client()

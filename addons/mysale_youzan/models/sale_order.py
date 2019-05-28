@@ -214,7 +214,7 @@ class SaleOrder(models.Model):
 
         params = {
             'status': 'DELIVERED',
-            'update_time_start': update_start_str,
+            'update_time_start': update_start_str[0:19],
             'update_time_end': update_end.strftime('%Y-%m-%d %H:%M:%S'),
             'retail_source': constants.RETAIL_SOURCE,
             # 'admin_id': constants.YOUZAN_API_ADMIN_ID
