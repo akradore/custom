@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <!-- List view -->
+        <record id="logistics_company_list" model="ir.ui.view">
+            <field name="name">mysale.base.logistics.company.list</field>
+            <field name="model">mysale.base.logistics.company</field>
+            <field name="arch" type="xml">
+                <tree string="Logistics Company">
+                    <field name="name"/>
+                    <field name="logistics_regex_no"/>
+                    <field name="logistics_default_val"/>
+                    <field name="active"/>
+                </tree>
+            </field>
+        </record>
+        <!-- List view for user -->
+        <record id="logistics_company_user" model="ir.ui.view">
+            <field name="name">mysale.base.logistics.company.list.user</field>
+            <field name="model">mysale.base.logistics.company</field>
+            <field name="arch" type="xml">
+                <tree string="Logistics Company">
+                    <field name="name"/>
+                </tree>
+            </field>
+        </record>
+        <!-- Form view -->
+        <record id="logistics_company_form" model="ir.ui.view">
+            <field name="name">mysale.base.logistics.company.form</field>
+            <field name="model">mysale.base.logistics.company</field>
+            <field name="priority">1</field>
+            <field name="arch" type="xml">
+                <form string="Logistics Company">
+                    <header>
+                    </header>
+                    <sheet>
+                        <field name="id" invisible="1"/>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="toggle_active" type="object" class="oe_stat_button" icon="fa-check">
+                                <field name="active" widget="boolean_button" options='{"terminology": "active"}'/>
+                            </button>
+                        </div>
+                        <field name="active_partner" required="0" readonly="1" invisible="1"/>
+                        <div class="alert alert-info text-center o_form_header"
+                            attrs="{'invisible': [
+                                '|', '|',
+                                '&amp;', ('active', '=', True), ('active_partner', '=', True),
+                                '&amp;', ('active', '=', False), ('active_partner', '=', False),
+                                '&amp;', ('active', '=', True), ('active_partner', '=', False),
+                            ]}"
+                            role="alert">
+                          <a class="close" data-dismiss="alert" href="#">x</a>
+                          <div>
+                            <strong>The contact linked to this user is still active</strong>
+                          </div>
+                          <div>You can archive the contact
+                            <field name="partner_id" required="0" readonly="1"/>
+                          </div>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="name" required="1"/>
+                                <field name="ref" required="1"/>
+                                <field name="is_company" required="1" attrs="{'readonly':[('is_company','=',True)]}"/>
+                                <field name="industry_id" domain="[('id', '=', 8)]" required="1"/>
+                                <field name="logistics_regex_no"/>
+                                <field name="logistics_default_val"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <!-- Search view -->
+        <record id="logistics_company_search" model="ir.ui.view">
+            <field name="name">mysale.base.logistics.company.search</field>
+            <field name="model">mysale.base.logistics.company</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="name"/>
+                    <field name="ref"/>
+                </search>
+            </field>
+        </record>
+        <!-- Window action -->
+        <record id="logistics_company_action" model="ir.actions.act_window">
+            <field name="help">Logistics Company </field>
+            <field name="name">Logistics Company </field>
+            <field name="res_model">mysale.base.logistics.company</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="view_mode">tree,form</field>
+            <field name="context">{'default_is_company': True, 'default_industry_id': 8}</field>
+        </record>
+        <!-- Window action list view -->
+        <record id="logistics_company_action_list" model="ir.actions.act_window.view">
+            <field name="act_window_id" ref="logistics_company_action"/>
+            <field name="sequence">10</field>
+            <field name="view_id" ref="logistics_company_list"/>
+            <field name="view_mode">tree</field>
+        </record>
+        <!-- Window action form view -->
+        <record id="logistics_company_action_form" model="ir.actions.act_window.view">
+            <field name="act_window_id" ref="logistics_company_action"/>
+            <field name="sequence">12</field>
+            <field name="view_id" ref="logistics_company_form"/>
+            <field name="view_mode">form</field>
+        </record>
+    </data>
+</odoo>

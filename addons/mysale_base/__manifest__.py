@@ -24,11 +24,12 @@
 
     # always loaded
     'data': [
-        # 'security/ir.model.access.csv',
+        'security/ir.model.access.csv',
         'security/res_group.xml',
         'views/res_config_settings.xml',
-        'views/views.xml',
-        'views/templates.xml',
+        'views/mysale_logistics.xml',
+        'views/stock_picking.xml',
+        'views/menu.xml',
     ],
 
     'installable': True,

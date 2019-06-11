@@ -1,4 +1,9 @@
+#[STOCK] 新增门店时，需要修改作业类型IDS
+ZC2RS_WH_IN_PICKING_TYPE_IDS = (5,)   #总部统配门店仓对应的入库作业类型ID
+PO2RS_WH_IN_PICKING_TYPE_IDS = (7,29) #采购直配门店仓对应的入库作业类型ID
 
+
+#[EXTERNAL]
 YOUZAN_CLIENT_ID = '7e9b3f9f5eb5406820'
 YOUZAN_CLIENT_SECRET = '72c60b40e808e2e0eae7b26e2dd475ef'
 YOUZAN_AUTHORITY_ID = '42971327'
@@ -14,6 +19,7 @@ YZAPI_SCOPE_REQUIRED = (
 'multi_store', 'shop', 'item', 'trade', 'logistics', 'coupon_advanced', 'user', 'pay_qrcode', 'trade_virtual',
 'reviews', 'item_category', 'storage', 'retail_goods', 'retail_product', 'retail_stock', 'retail_supplier',
 'retail_store', 'retail_shop', 'retail_trade')
+
 
 """
 0:'默认值',

@@ -17,7 +17,7 @@ class SaleOrder(models.Model):
         # default use buyer_phone
         if not buyer_phone:
             return '_%s' % (buyer_id or 0)
-        return 's%_s%' % (buyer_phone, str(buyer_id or 0))
+        return '%s_%s' % (buyer_phone, str(buyer_id or 0))
 
     # ex_order_from = fields.Selection([
     #     ('default', 'DEFAULT'),
@@ -99,48 +99,48 @@ class SaleOrder(models.Model):
         try:
             # STEP 1, create sale order from push message
             sale_order = self.env['sale.order'].sudo().search([
-                ('origin', '=', data['orderNo']),
+                ('origin', '=', data['order_no']),
                 ('order_from', '=', constants.ORDER_FROM_YOUZAN_RETAIL)
             ], limit=1)
 
             if sale_order:
                 return sale_order
 
-            buyer, warehouse_code, pay_way = data['buyerInfo'], data['warehouseCode'], data['payWay']
+            buyer, warehouse_code, pay_way = data['buyer_info'], data['warehouse_code'], data['pay_way']
             parter = self.env['res.partner'].sudo().search(
-                ['|', ('ref', '=like', '%' + str(buyer['buyerId'] or '0')),
-                 ('ref', '=like', str(buyer['buyerPhone'] or 'null') + '%')], limit=1)
+                ['|', ('ref', '=like', '%' + str(buyer['buyer_id'] or '0')),
+                 ('ref', '=like', str(buyer['buyer_phone'] or 'null') + '%')], limit=1)
 
             if not parter:
                 parter = self.env['res.partner'].sudo().create({
-                    'name': buyer['buyerName'] or buyer['buyerPhone'] or str(buyer['buyerId']),
+                    'name': buyer['buyer_name'] or buyer['buyer_phone'] or str(buyer['buyer_id']),
                     'type': 'contact',
-                    'date': data['createTime'],
-                    'ref': self._gen_partner_ref_unikey(buyer['buyerPhone'], buyer['buyerId']),
-                    'mobile': buyer['buyerPhone'],
+                    'date': data['create_time'],
+                    'ref': self._gen_partner_ref_unikey(buyer['buyer_phone'], buyer['buyer_id']),
+                    'mobile': buyer['buyer_phone'],
                     'customer': True,
                 })
 
             ware_house = self.env['stock.warehouse'].sudo().search([('code', '=', warehouse_code)], limit=1)
             sale_order = self.env['sale.order'].sudo().create({
                 # 'name': '',
-                'origin': data['orderNo'],
+                'origin': data['order_no'],
                 'order_from': constants.ORDER_FROM_YOUZAN_RETAIL,
-                'date_order': data['createTime'],
+                'date_order': data['create_time'],
                 'partner_id': parter and parter.id,
                 'warehouse_id': ware_house and ware_house.id,
                 'note': data.get('remark', None),
             })
 
-            for item in data['orderItems']:
-                product = self.env['product.product'].sudo().search([('default_code', '=', item['skuCode'])], limit=1)
+            for item in data['order_items']:
+                product = self.env['product.product'].sudo().search([('default_code', '=', item['sku_code'])], limit=1)
                 self.env['sale.order.line'].sudo().create({
                     'order_id': sale_order and sale_order.id,
                     'product_id': product and product.id,
-                    'order_item_no': item['orderItemNo'],
-                    'name': item['productName'],
+                    'order_item_no': item['order_item_no'],
+                    'name': item['product_name'],
                     # 'customer_lead': 2,  # post in 2 days
-                    'price_unit': float(item['realSalesPrice']) / float(item['quantity']),
+                    'price_unit': float(item['real_sales_price']) / float(item['quantity']),
                     'product_uom_qty': item['quantity'],
                 })
 
@@ -222,6 +222,8 @@ class SaleOrder(models.Model):
 
         page_no = 1
         has_next_page = True
+        debug = self.env['ir.config_parameter'].sudo().get_param(
+            'mysale_youzan.mysale_youzan_push_message_is_debug_mode')
 
         while has_next_page:
 
@@ -231,13 +233,14 @@ class SaleOrder(models.Model):
             })
             access_token = self.env['res.config.settings'].get_youzan_access_token()
             result = yzclient.invoke('youzan.retail.open.deliveryorder.query', '3.0.0', 'POST', params=params,
-                                     files=[], access_token=access_token)
-            delivery_orders, paginator = result['data']['deliveryOrders'], result['data']['paginator']
+                                     files=[], access_token=access_token, debug=debug)
+            print ('data', result)
+            delivery_orders, paginator = result['data']['delivery_orders'], result['data']['paginator']
 
             for order_data in delivery_orders:
                 self.with_delay().create_youzan_retail_order_by_params(order_data)
 
-            has_next_page = paginator['page'] <= paginator['totalCount'] * 1.0 / paginator['pageSize']
+            has_next_page = paginator['page'] <= paginator['total_count'] * 1.0 / paginator['page_size']
             if has_next_page:
                 page_no = paginator['page'] + 1
 

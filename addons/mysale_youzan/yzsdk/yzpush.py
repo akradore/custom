@@ -69,7 +69,12 @@ class YZPushService(object):
         params['delivery_order_no'] = req_data["delivery_order_no"]
         params['retail_source'] = constants.RETAIL_SOURCE
 
-        result = yzclient.invoke('youzan.retail.open.deliveryorder.get', '3.0.0', 'POST', params=params, files=[])
+        debug = self.env['ir.config_parameter'].sudo().get_param(
+            'mysale_youzan.mysale_youzan_push_message_is_debug_mode')
+
+        result = yzclient.invoke('youzan.retail.open.deliveryorder.get', '3.0.0', 'POST',
+                                 params=params,
+                                 debug=debug)
         data = result['data']
 
         if data['saleWay'] != 'OFFLINE':

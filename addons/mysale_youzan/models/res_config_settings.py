@@ -64,7 +64,7 @@ class YouzanRetailResConfigSettings(models.TransientModel):
                                                          self.mysale_youzan_access_token)
 
         if not self.mysale_youzan_retail_order_last_update:
-            self.mysale_youzan_retail_order_last_update = datetime.datetime.now() - datetime.timedelta(days=1)
+            self.mysale_youzan_retail_order_last_update = datetime.datetime.now() - datetime.timedelta(days=3)
         self.env['ir.config_parameter'].sudo().set_param('mysale_youzan.mysale_youzan_retail_order_last_update',
                                                          self.mysale_youzan_retail_order_last_update)
 

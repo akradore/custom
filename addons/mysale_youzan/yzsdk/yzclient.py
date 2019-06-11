@@ -3,10 +3,15 @@ import time
 import requests
 import hashlib
 import json
+import logging
+import uuid
 
 from odoo.http import request
 
 from .. import constants
+
+_logger = logging.getLogger(__name__)
+
 ####################################
 #
 #   有赞开放平台SDK - 连锁接口处理- Python 3.0.6
@@ -27,21 +32,39 @@ class YZClient:
         return cls(token)
 
 
-    def invoke(self, apiName, version, method, params={}, files={}, access_token=None, http_url=None):
+    def invoke(self, apiName, version, method, params={}, files={}, access_token=None, http_url=None, debug=False):
         http_url = http_url or constants.YOUZAN_API_GETWAY
+        serial = None
 
         if not access_token:
             access_token = request.env['res.config.settings'].get_youzan_access_token()
 
         http_url = http_url + '/' + apiName + '/' + version + '?access_token=%s' % access_token
+
+        if debug: # 请求前调试日志
+            serial = uuid.uuid4().hex
+            _logger.debug(json.dumps({
+                'serial': serial,
+                'http_url': http_url,
+                'method': method,
+                'params': params,
+                'files': files,
+            }))
+
         resp = self.send_request(http_url, method, params, files)
+
+        if debug: # 请求响应调试日志
+            _logger.debug(json.dumps({
+                'serial': serial,
+                'response': str(resp.content, 'utf-8'),
+            }))
 
         if resp.status_code != 200:
             ##TODO need to notify admin
             raise Exception('Invalid Youzan Response (status, text): %s,%s' %( resp.status_code, resp.content))
 
         result = resp.json()
-        if not (result['code'] == 200 and result['success']):
+        if 'gw_err_resp' in result or not (result['code'] == 200 and result['success']):
             ##TODO need to notify admin
             raise Exception('Invalid Youzan Response: %s' %resp.content)
 

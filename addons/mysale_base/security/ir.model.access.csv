@@ -1,3 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_mysale_base_sale_order,mysale_base.sale_order,model_mysale_base_sale_order,,1,0,0,0
-access_mysale_base_sale_order_line,mysale_base.sale_order_line,model_mysale_base_sale_order_line,,1,0,0,0
+access_mysale_stock_synchron,access.mysale.stock.synchron,model_mysale_stock_synchron,base.group_user,1,1,1,0
+access_mysale_stock_synchron_item,access.mysale.stock.synchron.item,model_mysale_stock_synchron_item,base.group_user,1,1,1,0
+access_mysale_base_logistics_company,access.mysale.base.logistics.company,model_mysale_base_logistics_company,base.group_user,1,1,1,0

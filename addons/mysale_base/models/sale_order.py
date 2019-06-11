@@ -11,7 +11,7 @@ class SaleOrder(models.Model):
         ('yz_mall', 'YOUZAN MALL'),
         ('taobao', 'TAOBAO'),
         ('jd', 'JINGDONG'),
-        ], string='来自平台', readonly=True, copy=False, index=True, track_visibility='onchange', track_sequence=3, default='default')
+        ], string='来自平台', readonly=True, copy=False, index=True, default='default')
 
 
 
