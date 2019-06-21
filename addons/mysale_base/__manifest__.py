@@ -29,6 +29,7 @@
         'views/res_config_settings.xml',
         'views/mysale_logistics.xml',
         'views/stock_picking.xml',
+        'views/stock_synchron.xml',
         'views/menu.xml',
     ],
 

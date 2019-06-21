@@ -6,6 +6,16 @@ import re
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 
+class Picking(models.Model):
+    _inherit = "stock.picking"
+
+    source_order_type = fields.Selection([
+        ('direct_order', '总部统配单'),
+        ('apply_order', '要货配送单')],
+        string='原单据类型',
+        states={'done': [('readonly', True)]})
+
+
 class QuantPackage(models.Model):
     """ Packages containing quants and/or other packages """
     _name = 'stock.quant.package'
@@ -15,12 +25,12 @@ class QuantPackage(models.Model):
 
     logistics_company_id = fields.Many2one('mysale.base.logistics.company', '物流公司', ondelete='restrict',
                                            help="Vendor of this product")
-    logistics_no = fields.Char(String='运单号', index=True)
+    logistics_no = fields.Char(string='运单号', index=True)
 
     @api.onchange('logistics_company_id', 'logistics_no')
     def on_change_name(self):
         if self.logistics_company_id and self.logistics_no:
-            self.name = '%s%s' % (self.logistics_company_id.ref , self.logistics_no)
+            self.name = '%s-%s' % (self.logistics_company_id.ref , self.logistics_no)
 
     @api.depends('logistics_company_id', 'logistics_no')
     def _compute_has_logistics(self):

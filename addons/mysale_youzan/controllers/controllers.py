@@ -37,7 +37,7 @@ class YouzanRetail(http.Controller):
 
     @odoo_http.route2('/mysale_youzan/push/receive/', type='json2', auth='public' , csrf=False)
     def push_receive(self, **request_data):
-
+        """ 有赞消息通知统一处理接口 """
         self._write_to_debug_log('Youzan Push Messsage', data=json.dumps(request_data, indent=2))
 
         yz_psrv = YouzanRetail.youzan_push_service()

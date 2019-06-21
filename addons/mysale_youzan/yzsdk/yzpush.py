@@ -63,7 +63,6 @@ class YZPushService(object):
             "delivery_order_no": ...
         }
         """
-        yzclient = YZClient.get_default_client()
 
         params = {}
         params['delivery_order_no'] = req_data["delivery_order_no"]
@@ -72,33 +71,118 @@ class YZPushService(object):
         debug = self.env['ir.config_parameter'].sudo().get_param(
             'mysale_youzan.mysale_youzan_push_message_is_debug_mode')
 
+        yzclient = YZClient.get_default_client()
         result = yzclient.invoke('youzan.retail.open.deliveryorder.get', '3.0.0', 'POST',
                                  params=params,
                                  debug=debug)
         data = result['data']
 
-        if data['saleWay'] != 'OFFLINE':
+        if data['saleWay'] != 'OFFLINE': # 线上消息通知只接收线下零售订单
             return False
 
         self.env['sale.order'].with_delay().create_youzan_retail_order_by_params(data)
 
         # TODO ,handle exception and notice admin
-        return
+        return True
 
-    def youzan_trade_order_state(self, **data):
-        """{
-            "client_id":"6cd25b3f99727975b5",
-            "id":"E20170807181905034500002",
-            "kdt_id":63077,
-            "kdt_name":"Qi码运动馆",
-            "mode":1,
-            "msg":"%7B%22update_time%22:%222017-08-07%2018:19:05%22,%22payment%22:%2211.00%22,%22tid%22:%22E20170807181905034500002%22,%22status%22:%22TRADE_CLOSED%22%7D",
-            "sendCount":0,
-            "sign":"5c15274ca4c079197c89154f44b20307",
-            "status":"TRADE_CLOSED",
-            "test":false,
-            "type":"TRADE_ORDER_STATE",
-            "version":1502101273
+    def youzan_retail_open_goods_apply_order_to_check(self, req_data):
+        """要货单消息通知，ERP内部审核
+        {
+            'apply_order_no': 'RO0021906120001'
         }"""
 
-        print('trade_order_state, kw=%s' % data)
+        params = {}
+        params['apply_order_no'] = req_data["apply_order_no"]
+        params['retail_source'] = constants.RETAIL_SOURCE
+
+        debug = self.env['ir.config_parameter'].sudo().get_param(
+            'mysale_youzan.mysale_youzan_push_message_is_debug_mode')
+
+        yzclient = YZClient.get_default_client()
+        result = yzclient.invoke('youzan.retail.open.applyorder.get', '3.0.0', 'POST',
+                                 params=params,
+                                 debug=debug)
+        data = result['data']
+
+        if data['status'] not in constants.APPLY_ORDER_STATUS_MAP.keys(): # 1-待审核 4-已驳回 5-已关闭 6-已完成 15-已审核
+            return False
+
+        self.env['mysale.stock.synchron'].with_delay().action_apply_order_create_or_update(data)
+
+        return True
+
+    def youzan_retail_open_stockout_order(self, req_data):
+        """ 出库单创建消息类型 调拨出库:DBCK, 配送出库:PSCK, 盘亏出库:PKCK, 销售出库:XSCK, 报损出库:BSCK, 其它出库:QTCK；
+        {
+          "order_type": "DBCK",
+          "biz_bill_no": "111",
+          "warehouse_code": "123"
+        }"""
+
+        params = {}
+        params['biz_bill_no'] = req_data["biz_bill_no"]
+        params['retail_source'] = constants.RETAIL_SOURCE
+
+        debug = self.env['ir.config_parameter'].sudo().get_param(
+            'mysale_youzan.mysale_youzan_push_message_is_debug_mode')
+
+        yzclient = YZClient.get_default_client()
+        result = yzclient.invoke('youzan.retail.open.stockinorder.get', '3.0.0', 'POST',
+                                 params=params,
+                                 debug=debug)
+        data = result['data']
+
+        self.env['mysale.stock.synchron'].with_delay().action_apply_order_create_or_update(data)
+
+        return True
+
+    def youzan_retail_open_stockin_order(self, req_data):
+        """ 入库单创建消息类型 调拨入库:DBRK, 配送入库:PSRK, 盘盈入库:PYRK, 退货入库:THRK, 采购入库:CGRK;
+        {
+          "order_type": "DBRK",
+          "biz_bill_no": "111",
+          "warehouse_code": "123"
+        }"""
+
+        params = {}
+        params['biz_bill_no'] = req_data["biz_bill_no"]
+        params['retail_source'] = constants.RETAIL_SOURCE
+
+        debug = self.env['ir.config_parameter'].sudo().get_param(
+            'mysale_youzan.mysale_youzan_push_message_is_debug_mode')
+
+        yzclient = YZClient.get_default_client()
+        result = yzclient.invoke('youzan.retail.open.stockinorder.get', '3.0.0', 'POST',
+                                 params=params,
+                                 debug=debug)
+        data = result['data']
+
+        self.env['mysale.stock.synchron'].with_delay().action_stockin_order_create(data)
+
+        return True
+
+
+    def youzan_retail_open_stockout_order(self, req_data):
+        """ 出库单创建消息类型 调拨入库:DBRK, 配送入库:PSRK, 盘盈入库:PYRK, 退货入库:THRK, 采购入库:CGRK;
+        {
+          "order_type": "DBRK",
+          "biz_bill_no": "111",
+          "warehouse_code": "123"
+        }"""
+
+        params = {}
+        params['biz_bill_no'] = req_data["biz_bill_no"]
+        params['retail_source'] = constants.RETAIL_SOURCE
+
+        debug = self.env['ir.config_parameter'].sudo().get_param(
+            'mysale_youzan.mysale_youzan_push_message_is_debug_mode')
+
+        yzclient = YZClient.get_default_client()
+        result = yzclient.invoke('youzan.retail.open.stockoutorder.get', '3.0.0', 'POST',
+                                 params=params,
+                                 debug=debug)
+        data = result['data']
+
+        self.env['mysale.stock.synchron'].with_delay().action_stockout_order_create(data)
+
+        return True

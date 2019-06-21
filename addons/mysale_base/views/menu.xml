@@ -9,19 +9,18 @@
 <!--    </record>-->
 
     <!-- Top menu item -->
-
     <menuitem name="Mysale" id="mysale_base.menu_root"/>
 
     <!-- menu categories -->
+    <menuitem name="库存同步" id="mysale_base_stock_synchron" parent="mysale_base.menu_root" sequence="1"
+              action="mysale_base.stock_synchron_action" />
+    <menuitem name="物流" id="mysale_base_logistics_company" parent="mysale_base.menu_root"/>
 
-    <menuitem name="物流公司" id="mysale_base_logistics_company" parent="mysale_base.menu_root"/>
-    <menuitem name="包裹" id="mysale_base_quant_package" parent="mysale_base.menu_root"/>
 
     <!-- actions -->
-
     <menuitem name="物流公司" id="mysale_base_logistics_company_list" parent="mysale_base_logistics_company"
               action="mysale_base.logistics_company_action"/>
-    <menuitem name="包裹" id="mysale_base_quant_package_list" parent="mysale_base_quant_package"
+    <menuitem name="包裹" id="mysale_base_quant_package_list" parent="mysale_base_logistics_company"
               action="stock.action_package_view"/>
 
   </data>

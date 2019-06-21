@@ -8,6 +8,7 @@
             <field name="arch" type="xml">
                 <tree string="Logistics Company">
                     <field name="name"/>
+                    <field name="ref"/>
                     <field name="logistics_regex_no"/>
                     <field name="logistics_default_val"/>
                     <field name="active"/>

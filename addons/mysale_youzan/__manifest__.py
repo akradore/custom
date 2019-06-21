@@ -3,8 +3,11 @@
     'name': "mysale_youzan",
 
     'summary': """
-        Short (1 phrase/line) summary of the module's purpose, used as
-        subtitle on modules listing or apps.openerp.com""",
+        与有赞同步更新商品、订单、库存信息
+        商品信息：odoo<=>有赞
+        订单信息: 有赞=>odoo
+        库存信息: odoo<=>有赞
+        """,
 
     'description': """
         Long description of module's purpose

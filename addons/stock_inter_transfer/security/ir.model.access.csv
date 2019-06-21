@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_stock_inter_type_manager,stock.inter.type manager,model_stock_inter_type,stock.group_stock_manager,1,1,1,1
+access_stock_inter_picking_user,stock.inter.picking user,model_stock_inter_picking,stock.group_stock_user,1,1,1,1
+access_stock_inter_line_user,stock.inter.line user,model_stock_inter_line,stock.group_stock_user,1,1,1,1
+

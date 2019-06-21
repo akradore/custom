@@ -20,6 +20,12 @@ YZAPI_SCOPE_REQUIRED = (
 'reviews', 'item_category', 'storage', 'retail_goods', 'retail_product', 'retail_stock', 'retail_supplier',
 'retail_store', 'retail_shop', 'retail_trade')
 
+APPLY_ORDER_STATUS_MAP = {
+    1: 'create',
+    5: 'cancel',
+    6: 'done',
+    15: 'check',
+}
 
 """
 0:'默认值',

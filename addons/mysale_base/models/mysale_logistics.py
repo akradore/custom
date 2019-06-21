@@ -33,7 +33,6 @@ class LogisticsCompany(models.Model):
     @api.one
     @api.constrains('logistics_regex_no', 'logistics_default_val')
     def _check_logistics_regex_no(self):
-        print('constrains', self.logistics_regex_no, self.logistics_default_val)
         if self.logistics_regex_no:
 
             if not self.logistics_default_val:

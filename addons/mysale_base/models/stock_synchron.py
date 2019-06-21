@@ -17,51 +17,64 @@ class StockSynchron(models.Model):
         states={'done': [('readonly', True)]})
 
     source = fields.Char(
-        '关联业务单据编号', index=True,
+        '关联业务单号', index=True,
         states={'done': [('readonly', True)], 'cancel': [('readonly', True)]},
-        help="关联业务单据编号（业务接收方传回的业务单号）")
+        help="如配送单关联要货单单号，出库单关联配货单号")
+
+    result_no = fields.Char(
+        '业务结果单号', index=True,
+        states={'done': [('readonly', True)], 'cancel': [('readonly', True)]},
+        help="业务接收方传回的业务单号")
 
     order_type_code = fields.Selection([
         ('distribution', '总仓配送单'),
-        ('post_return', '配送回仓单'),
+        ('stockin_order', '配送回仓单'),
+        ('stockout_order', '配送出库单'),
         ('stock_ckeck', '库存盘点单'),
         ('apply_stock', '门店叫货单'),
+        ('apply_check', '叫货单确认'),
         ('stock_ajust', '库存调整单'),
         ('direct_post', '供应商直发')],
         string='单据类型',
-        readonly=True)
+        states={'done': [('readonly', True)]})
 
     sync_type_code = fields.Selection([
-        ('odoo2youzan', 'Odoo=>有赞的库存动作'),
-        ('youzan2odoo', '有赞=>Odoo的库存动作'),
-        ('odoo2wdt', 'Odoo=>旺店通的库存动作'),
-        ('wdt2odoo', '旺店通=>Odoo的库存动作')],
+        ('odoo2youzan', 'Odoo=>有赞'),
+        ('youzan2odoo', '有赞=>Odoo'),
+        ('odoo2wdt', 'Odoo=>旺店通'),
+        ('wdt2odoo', '旺店通=>Odoo')],
         string='动作方向',
-        readonly=True)
+        states={'done': [('readonly', True)]})
 
     owner_id = fields.Many2one('res.partner', '发起人', states={'done': [('readonly', True)]})
 
     synchrone_items = fields.One2many('mysale.stock.synchron.item', 'stock_synchron_id',
                                       string="库存同步", copy=True)
 
-    from_warehouse_code = fields.Char(String='来源仓库编码', readonly=True, index=True)
-    to_warehouse_code = fields.Char(String='目标仓库编码', readonly=True, index=True)
+    from_warehouse_code = fields.Char(string='来源仓库编码', index=True,
+                                      states={'done': [('readonly', True)]})
+    to_warehouse_code = fields.Char(string='目标仓库编码', index=True,
+                                    states={'done': [('readonly', True)]})
 
-    from_warehouse_name = fields.Char(String='来源仓库名称', readonly=True)
-    to_warehouse_name = fields.Char(String='目标仓库名称', readonly=True)
+    from_warehouse_name = fields.Char(string='来源仓库名称', states={'done': [('readonly', True)]})
+    to_warehouse_name = fields.Char(string='目标仓库名称', states={'done': [('readonly', True)]})
 
     state = fields.Selection([
         ('create', '待处理'),
+        ('check', '已审核'),
+        ('partially_done', '部分完成'),
         ('done', '已完成'),
         ('fail', '有错误'),
         ('cancel', '已取消'),
-    ], string='状态', default="create")
+    ], string='状态', compute='_compute_state', default="create", states={'done': [('readonly', True)]})
 
-    data_order = fields.Datetime('单据日期', index=True, default=fields.Datetime.now)
-    date_done = fields.Datetime('完成时间')
+    data_order = fields.Datetime('单据日期', index=True, default=fields.Datetime.now, readonly=True)
+    date_done  = fields.Datetime('完成时间')
+
+    package_id = fields.Many2one('stock.quant.package', '库存同步记录')
 
     note = fields.Text('备注')
-    refused_reason = fields.Text('拒绝/错误原因')
+    refused_reason = fields.Text('拒绝/错误原因', states={'done': [('readonly', True)]})
 
     @api.model
     def create(self, vals):
@@ -74,6 +87,34 @@ class StockSynchron(models.Model):
         if 'done' in self.mapped('state'):
             raise UserError(_('You cannot delete a synchrone which is done.'))
         return super(StockSynchron, self).unlink()
+
+    @api.depends('from_warehouse_code')
+    @api.returns('stock.warehouse')
+    @api.one
+    def from_warehouse(self):
+        domain = [('code', '=', self.from_warehouse_code)]
+        wh = self.env['stock.warehouse'].search(domain, limit=1)
+        return wh
+
+    @api.depends('to_warehouse_code')
+    @api.returns('stock.warehouse')
+    @api.one
+    def to_warehouse(self):
+        domain = [('code', '=', self.to_warehouse_code)]
+        wh = self.env['stock.warehouse'].search(domain, limit=1)
+        return wh
+
+    @api.depends('synchrone_items.state', 'synchrone_items.stock_synchron_id')
+    @api.one
+    def _compute_state(self):
+        if not self.synchrone_items:
+            self.state = 'create'
+        elif all(item.state in ['create', 'fail', 'cancel', 'check' ] for item in self.synchrone_items):
+            self.state = self.synchrone_items[0].state
+        elif all(item.state in ['cancel', 'done'] for item in self.synchrone_items):
+            self.state = 'done'
+        else:
+            self.state = 'partially_done'
 
 
 class StockSynchronItem(models.Model):
@@ -88,30 +129,46 @@ class StockSynchronItem(models.Model):
     #     'uom.uom', 'Unit of Measure',
     #     required=True, states={'done': [('readonly', True)]})
 
-    name = fields.Char(String='商品名称', required=True)
+    name = fields.Char(string='商品名称', required=True)
 
     stock_synchron_id = fields.Many2one('mysale.stock.synchron', 'Stock Synchron', index=True,
                                         required=True, states={'done': [('readonly', True)]})
 
-    supplier_code = fields.Char(String='供应商编码', index=True)
-    sku_code = fields.Char(String='SKU编码', index=True, required=True)
+    supplier_code = fields.Char(string='供应商编码', index=True)
+    sku_code = fields.Char(string='SKU编码', index=True, required=True)
+    product_id = fields.Many2one('product.product', '商品', domain=[('type', 'in', ['product', 'consu'])],
+                                 states={'done': [('readonly', True)]})
 
-    unit = fields.Char(String='周转单位', required=True)
+    unit = fields.Char(string='周转单位', required=True)
+    product_uom_id = fields.Many2one('uom.uom', '商品单位', states={'done': [('readonly', True)]})
 
-    quantity = fields.Float(String='周转数量/申请数量', required=True)
-    actual_out_num = fields.Float(String='实际出库数')
-    actual_in_num = fields.Float(String='实际入库数量')
+    quantity = fields.Float(string='周转数量/申请数量', default=0, required=True)
+    pre_out_num = fields.Float(string='预发数量', default=0)
+    actual_out_num = fields.Float(string='实际出库数', default=0)
+    actual_in_num = fields.Float(string='实际入库数量', default=0)
 
-    with_tax_cost = fields.Float(String='含税成本单价（元）')
-    with_tax_amount = fields.Float(String='含税总金额（含税成本单价*数量）（元）')
-    with_tax_income = fields.Float(String='含税总收入（实付金额）')
+    with_tax_cost = fields.Float(string='含税成本单价（元）', default=0)
+    with_tax_amount = fields.Float(string='含税总金额（含税成本单价*数量）（元）', default=0)
+    with_tax_income = fields.Float(string='含税总收入（实付金额）', default=0)
 
-    without_tax_amount = fields.Float(String='不含税总金额（不含税成本单价数量）')
-    without_tax_cost = fields.Float(String='不含税成本单价（元）')
+    without_tax_amount = fields.Float(string='不含税总金额（不含税成本单价数量）', default=0)
+    without_tax_cost = fields.Float(string='不含税成本单价（元）', default=0)
 
-    checked_delivery_cost = fields.Float(String='不含税成本单价（元）')
-    delivery_cost = fields.Float(String='不含税成本单价（元）')
+    checked_delivery_cost = fields.Float(string='审核配送价', default=0)
+    delivery_cost = fields.Float(string='配送价', default=0)
 
     move_ids = fields.Many2many('stock.move', 'stock_move_synchrone_items', 'move_id', 'item_id', '库存移动明细',
                                 help="对应的库存移动细节")
 
+    order_type_code = fields.Selection(related='stock_synchron_id.order_type_code', string='单据类型', readonly=True)
+
+    sync_type_code = fields.Selection(related='stock_synchron_id.sync_type_code', string='动作方向', readonly=True)
+
+    state = fields.Selection([
+        ('create', '待处理'),
+        ('check', '已审核'),
+        ('partially_done', '部分完成'),
+        ('done', '已完成'),
+        ('fail', '有错误'),
+        ('cancel', '已取消'),
+    ], string='状态', default="create", states={'done': [('readonly', True)]})
