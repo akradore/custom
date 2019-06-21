@@ -28,6 +28,7 @@
             <field name="arch" type="xml">
                 <form string="Stock Synchron">
                     <header>
+                        <field name="state" widget="statusbar" statusbar_visible="create,check,partially_done,done,fail,cancel"/>
                     </header>
                     <sheet>
                         <field name="id" invisible="1"/>
@@ -36,13 +37,17 @@
                             <!--                                <field name="active" widget="boolean_button" options='{"terminology": "active"}'/>-->
                             <!--                            </button>-->
                         </div>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name"/>
+                            </h1>
+                        </div>
                         <group>
-                            <group>
-                                <field name="name" required="1"/>
+                            <group >
                                 <field name="source" />
                                 <field name="sync_type_code" required="1"/>
                                 <field name="order_type_code" required="1"/>
-                                <field name="state" />
+<!--                                <field name="order_type" />-->
                             </group>
                             <group>
                                 <field name="from_warehouse_code" />
@@ -60,27 +65,28 @@
                             </group>
                         </group>
                         <notebook>
-                            <page string="Products">
-                                <field name="synchrone_items" attrs="{'readonly': [('state', 'in', ('done', 'cancel'))]}">
+                            <page string="产品列表">
+                                <field name="synchron_items" attrs="{'readonly': [('state', 'in', ('done', 'cancel'))]}">
                                     <tree string="Stock Synchron Items" editable="bottom">
                                         <field name="name" />
-                                        <field name="supplier_code" />
+<!--                                        <field name="supplier_code" />-->
                                         <field name="sku_code" />
                                         <field name="product_id" />
                                         <field name="unit"/>
-                                        <field name="product_uom_id"/>
+<!--                                        <field name="product_uom_id"/>-->
 
                                         <field name="quantity"/>
+                                        <field name="pre_out_num"/>
                                         <field name="actual_out_num"/>
                                         <field name="actual_in_num"/>
-                                        <field name="with_tax_cost"/>
-                                        <field name="with_tax_amount"/>
+<!--                                        <field name="with_tax_cost"/>-->
+<!--                                        <field name="with_tax_amount"/>-->
 
-                                        <field name="with_tax_income"/>
-                                        <field name="without_tax_amount"/>
-                                        <field name="without_tax_cost"/>
-                                        <field name="checked_delivery_cost"/>
-                                        <field name="delivery_cost"/>
+<!--                                        <field name="with_tax_income"/>-->
+<!--                                        <field name="without_tax_amount"/>-->
+<!--                                        <field name="without_tax_cost"/>-->
+<!--                                        <field name="checked_delivery_cost"/>-->
+<!--                                        <field name="delivery_cost"/>-->
 
                                         <field name="state"/>
                                     </tree>

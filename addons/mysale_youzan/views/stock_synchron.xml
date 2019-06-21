@@ -1,0 +1,15 @@
+<odoo>
+  <data>
+    <record id="stock_synchron_form_inherit" model="ir.ui.view">
+      <field name="inherit_id" ref="mysale_base.stock_synchron_form"/>
+      <field name="model">mysale.stock.synchron</field>
+      <field name="name">mysale.stock.synchron.form.inherit</field>
+      <field name="priority">40</field>
+      <field name="arch" type="xml">
+        <xpath expr="//form/sheet/group/group/field[@name='order_type_code']" position="after">
+          <field name="order_type" />
+        </xpath>
+      </field>
+    </record>
+  </data>
+</odoo>

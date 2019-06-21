@@ -30,7 +30,7 @@
         # 'security/ir.model.access.csv',
         'views/res_config_settings.xml',
         'views/cron_job.xml',
-        'views/views.xml',
+        'views/stock_synchron.xml',
         'views/templates.xml',
     ],
     # only loaded in demonstration mode

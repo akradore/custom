@@ -60,7 +60,7 @@ class StockSynchron(models.Model):
             'order_items': []
         }
 
-        for item in self.synchrone_items:
+        for item in self.synchron_items:
             data['order_items'].append({
                 'sku_code': item.sku_code,
                 'quantity': '%.3f' % item.pre_out_num,
@@ -298,7 +298,7 @@ class StockSynchron(models.Model):
             'order_items': []
         }
 
-        for item in self.synchrone_items:
+        for item in self.synchron_items:
             data['order_items'].append({
                 'sku_code': item.sku_code,
                 'apply_num': '%s' % item.pre_out_num,

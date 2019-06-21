@@ -48,7 +48,7 @@ class StockSynchron(models.Model):
 
     owner_id = fields.Many2one('res.partner', '发起人', states={'done': [('readonly', True)]})
 
-    synchrone_items = fields.One2many('mysale.stock.synchron.item', 'stock_synchron_id',
+    synchron_items = fields.One2many('mysale.stock.synchron.item', 'stock_synchron_id',
                                       string="库存同步", copy=True)
 
     from_warehouse_code = fields.Char(string='来源仓库编码', index=True,
@@ -85,7 +85,7 @@ class StockSynchron(models.Model):
 
     def unlink(self):
         if 'done' in self.mapped('state'):
-            raise UserError(_('You cannot delete a synchrone which is done.'))
+            raise UserError(_('You cannot delete a synchron which is done.'))
         return super(StockSynchron, self).unlink()
 
     @api.depends('from_warehouse_code')
@@ -104,14 +104,14 @@ class StockSynchron(models.Model):
         wh = self.env['stock.warehouse'].search(domain, limit=1)
         return wh
 
-    @api.depends('synchrone_items.state', 'synchrone_items.stock_synchron_id')
+    @api.depends('synchron_items.state', 'synchron_items.stock_synchron_id')
     @api.one
     def _compute_state(self):
-        if not self.synchrone_items:
+        if not self.synchron_items:
             self.state = 'create'
-        elif all(item.state in ['create', 'fail', 'cancel', 'check' ] for item in self.synchrone_items):
-            self.state = self.synchrone_items[0].state
-        elif all(item.state in ['cancel', 'done'] for item in self.synchrone_items):
+        elif all(item.state in ['create', 'fail', 'cancel', 'check' ] for item in self.synchron_items):
+            self.state = self.synchron_items[0].state
+        elif all(item.state in ['cancel', 'done'] for item in self.synchron_items):
             self.state = 'done'
         else:
             self.state = 'partially_done'
