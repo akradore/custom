@@ -22,6 +22,7 @@ class StockInterPicking(models.Model):
             order.inter_picking_ids = picking_ids
             order.inter_picking_count = len(picking_ids)
 
+    partner_id = fields.Many2one('res.partner','业务伙伴')
     name = fields.Char(string=u'单号', required=False, copy=False, readonly=True,
                        index=True, default=lambda self: 'New')
     inter_type2 = fields.Many2one('stock.inter.type', string=u'调拨区分', readonly=True, copy=False, required=False,
@@ -113,6 +114,7 @@ class StockInterPicking(models.Model):
     @api.model
     def _prepare_inter_picking(self, picking_type, out_loc, in_loc, dt):
         return {
+            'partner_id':self.partner_id.id,
             'picking_type_id': picking_type.id,
             'date': dt,
             'origin': self.name,
