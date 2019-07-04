@@ -60,7 +60,7 @@ class StockInterPicking(models.Model):
                                          store=True)
     inter_picking_count = fields.Integer(compute="_compute_inter_picking", string=u'调拨单数', copy=False, default=0,
                                          store=True)
-    notes = fields.Char(string=u'源单据', readonly=True, states={'draft': [('readonly', False)]})
+    notes = fields.Char(string=u'备注（源单据）', readonly=True, states={'draft': [('readonly', False)]})
     company_id = fields.Many2one('res.company', u'公司',
                                  default=lambda self: self.env['res.company']._company_default_get('stock.picking'),
                                  states={'cancel': [('readonly', True)], 'done': [('readonly', True)]}, copy=True)

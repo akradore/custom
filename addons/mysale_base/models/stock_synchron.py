@@ -27,14 +27,15 @@ class StockSynchron(models.Model):
         help="业务接收方传回的业务单号")
 
     order_type_code = fields.Selection([
-        ('distribution', '总仓配送单'),
-        ('stockin_order', '配送回仓单'),
-        ('stockout_order', '配送出库单'),
-        ('stock_ckeck', '库存盘点单'),
-        ('apply_stock', '门店叫货单'),
-        ('apply_check', '叫货单确认'),
-        ('stock_ajust', '库存调整单'),
-        ('direct_post', '供应商直发')],
+        ('stockin_order', '内部入库单'), # 内部仓库之间库存流转入库
+        ('stockout_order', '内部出库单'), # 内部仓库之间库存流转出库
+        # ('stock_ckeck', '库存盘点单'),
+        # ('apply_stock', '门店要货单'),
+        # ('apply_check', '要货单确认'),
+        # ('distribution', '总仓配送单'),
+        # ('stock_ajust', '库存调整单'),
+        # ('direct_post', '供应商直发'),
+        ],
         string='单据类型',
         states={'done': [('readonly', True)]})
 
@@ -172,3 +173,15 @@ class StockSynchronItem(models.Model):
         ('fail', '有错误'),
         ('cancel', '已取消'),
     ], string='状态', default="create", states={'done': [('readonly', True)]})
+
+    # @api.depends('synchron_items.state', 'synchron_items.stock_synchron_id')
+    # @api.one
+    # def _compute_state(self):
+    #     if not self.synchron_items:
+    #         self.state = 'create'
+    #     elif all(item.state in ['create', 'fail', 'cancel', 'check'] for item in self.synchron_items):
+    #         self.state = self.synchron_items[0].state
+    #     elif all(item.state in ['cancel', 'done'] for item in self.synchron_items):
+    #         self.state = 'done'
+    #     else:
+    #         self.state = 'partially_done'

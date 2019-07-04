@@ -3,6 +3,7 @@
 
 from odoo import api, fields, models, _
 from odoo.addons.queue_job.job import job
+from odoo.exceptions import ValidationError
 
 from .. import constants
 from ..yzsdk import YZClient
@@ -17,9 +18,9 @@ class StockSynchron(models.Model):
         ('PKCK', '盘亏出库'),
         ('DBCK', '调拨出库'),
         ('YHTHCK', '要货退货出库'),
+        ('CGRK', '采购入库'),
         ('BYRK', '报溢入库'),
         ('PYRK', '盘盈入库'),
-        ('CGRK', '采购入库'),
         ('THRK', '退货入库'),
         ('DBRK', '调拨入库')],
         string='出入库单据类型',
@@ -96,7 +97,7 @@ class StockSynchron(models.Model):
         return True
 
     ##############################要货单/配送单/统配单#################################
-    # 业务说明：
+    # TODO （第一阶段所有进销存操作以有赞为准，odoo只做数据同步） 业务说明：
     # 1, 接收有赞门店要货单创建消息；
     # 2, odoo根据有赞要货单创建配货单；
     # 3, odoo审核配货单创建有赞配货单；
@@ -279,6 +280,68 @@ class StockSynchron(models.Model):
 
         return True
 
+    # @api.one
+    # @job
+    # def action_create_youzan_stockout_order(self):
+    #     """ step 4 odoo调拨出库包裹单创建有赞配送出库单（在配送单分配包裹验证后调用）"""
+    #
+    #     # PSCK=配送出库; BSCK=报损出库;PKCK=盘亏出库;DBCK=调拨出库; YHTHCK=要货退货出库
+    #
+    #     if not (self.order_type_code == 'stockout_order'
+    #             and self.sync_type_code == 'odoo2youzan'
+    #             and self.order_type == 'PSCK'):
+    #         return
+    #
+    #     data = {
+    #         'biz_bill_no': self.name,  # 包裹编号
+    #         'source_order_no': self.source,  # 关联配送单号
+    #         'order_type': 'PSCK',
+    #         'creator': self.owner_id.name,  # 配送单号
+    #         'admin_id': self.owner_id.ref,  # 配送单号
+    #         'create_time': self.data_order.strftime('%Y-%m-%d %H:%M:%S'),  # 配送单号
+    #         'warehouse_code': self.to_warehouse_code,  # 配送单号
+    #         'retail_source': constants.RETAIL_SOURCE,  # 配送单号
+    #         'remark': self.note,  # 配送单号
+    #
+    #         'logistics_company_id': self.package_id.logistics_company_id.name,  # 物流公司
+    #         'logistics_order_no': self.package_id.logistics_no,  # 运单号
+    #         'order_items': []  # 配送单号
+    #     }
+    #
+    #     for item in self.synchron_items:
+    #         data['order_items'].append({
+    #             'sku_code': item.sku_code,
+    #             'quantity': item.quantity,
+    #             'with_tax_cost': item.with_tax_cost,
+    #             'with_tax_amount': item.with_tax_amount,
+    #         })
+    #
+    #     yzclient = YZClient.get_default_client()
+    #     access_token = self.env['res.config.settings'].get_youzan_access_token()
+    #     debug = self.env['ir.config_parameter'].sudo().get_param(
+    #         'mysale_youzan.mysale_youzan_push_message_is_debug_mode')
+    #     try:
+    #         result = yzclient.invoke('youzan.retail.open.stockoutorder.create', '3.0.0', 'POST',
+    #                                  params=data,
+    #                                  files=[],
+    #                                  access_token=access_token,
+    #                                  debug=debug)
+    #
+    #     except Exception as exc:
+    #         self.write({
+    #             'refused_reason': str(exc),
+    #             'state': 'fail'
+    #         })
+    #         raise exc
+    #
+    #     else:
+    #         self.write({
+    #             'done_data': fields.datetime.now(),
+    #             'result_no': result['data'],
+    #             # 'state': 'done'
+    #         })
+    #
+    #     return True
 
     @api.one
     @job
@@ -336,154 +399,150 @@ class StockSynchron(models.Model):
 
     @api.model
     @job
-    def action_stockout_order_create(self, data):
+    def action_stockout_order_create_or_update(self, data):
         """ step 5.1 根据有赞配送入仓单创建odoo配送到货单(入库单消息统一处理方法） """
 
         # PSCK=配送出库; BSCK=报损出库;PKCK=盘亏出库;DBCK=调拨出库; YHTHCK=要货退货出库
+        bill_no = data['biz_bill_no']
+        sso = self.env['mysale.stock.synchron'].search([('name', '=', bill_no)])
+        sso_len = len(sso)
+        if sso_len > 1:
+            raise ValidationError('有赞出库单重复更新入库：%s' % bill_no)
 
-        sso = self.env['mysale.stock.synchron'].create({
-            'name': data['biz_bill_no'],
-            'source': data['source_order_no'],
-            'order_type_code': 'stockin_order',
-            'sync_type_code': 'youzan2odoo',
-            'order_type': data['order_type'],
-            'to_warehouse_code': data['warehouse_code'],
-            'note': data['remark'],
-            'refused_reason': data['refused_reason'],
-            'data_order': data['create_time'],
-            'state': 'create'
-        })
-
-        for item in data['order_items']:
-            product = self.env['product.product'].search([('default_code', '=', item['sku_code'])])
-            product_uom = self.env['uom.uom'].search([('name', '=', item['unit'])])
-            self.env['mysale.stock.synchron.item'].create({
-                'stock_synchron_id': sso.id,
-                'name': item['product_name'],
-                # 'supplier_code': 'apply_stock',
-                'sku_code': item['sku_code'],
-                'product_id': product.id,
-                'unit': item['unit'],
-                'product_uom_id': product_uom.id,
-                'quantity': item['quantity'],
-
-                'with_tax_cost': item['with_tax_cost'],
-                'with_tax_amount': item['with_tax_amount'],
-                'with_tax_income': item['with_tax_income'],
-                'without_tax_amount': item['without_tax_amount'],
-                'without_tax_cost': item['without_tax_cost'],
-                'checked_delivery_cost': item['checked_delivery_cost'],
-                'delivery_cost': item['delivery_cost'],
-                'state': 'create',
+        if not sso:
+            sso = self.env['mysale.stock.synchron'].create({
+                'name': data['biz_bill_no'],
+                'source': data['source_order_no'],
+                'order_type_code': 'stockout_order',
+                'sync_type_code': 'youzan2odoo',
+                'order_type': data['order_type'],
+                'to_warehouse_code': data['warehouse_code'],
+                'note': data['remark'],
+                'refused_reason': data['refused_reason'],
+                'data_order': data['create_time'],
+                'state': 'create'
             })
+
+            for item in data['order_items']:
+                product = self.env['product.product'].search([('default_code', '=', item['sku_code'])])
+                product_uom = self.env['uom.uom'].search([('name', '=', item['unit'])])
+                self.env['mysale.stock.synchron.item'].create({
+                    'stock_synchron_id': sso.id,
+                    'name': item['product_name'],
+                    # 'supplier_code': 'apply_stock',
+                    'sku_code': item['sku_code'],
+                    'product_id': product.id,
+                    'unit': item['unit'],
+                    'product_uom_id': product_uom.id,
+                    'quantity': item['quantity'],
+                    'pre_out_num': item['pre_out_num'],
+                    'actual_out_num': item['actual_out_num'],
+                    'actual_in_num': item['actual_in_num'],
+
+                    'with_tax_cost': item['with_tax_cost'],
+                    'with_tax_amount': item['with_tax_amount'],
+                    'with_tax_income': item['with_tax_income'],
+                    'without_tax_amount': item['without_tax_amount'],
+                    'without_tax_cost': item['without_tax_cost'],
+                    'checked_delivery_cost': item['checked_delivery_cost'],
+                    'delivery_cost': item['delivery_cost'],
+                    'state': 'create',
+                })
+
+        else:
+            for item in data['order_items']:
+                item_domain = [('stock_synchron_id','=', sso.id), ('sku_code', '=', item['sku_code'])]
+                synchron_item = self.env['mysale.stock.synchron.item'].search(item_domain)
+                synchron_item.write({
+                    # 'supplier_code': 'apply_stock',
+                    'unit': item['unit'],
+                    'quantity': item['quantity'],
+
+                    'with_tax_cost': item['with_tax_cost'],
+                    'with_tax_amount': item['with_tax_amount'],
+                    'with_tax_income': item['with_tax_income'],
+                    'without_tax_amount': item['without_tax_amount'],
+                    'without_tax_cost': item['without_tax_cost'],
+                    'checked_delivery_cost': item['checked_delivery_cost'],
+                    'delivery_cost': item['delivery_cost'],
+                })
 
         return sso
 
+
     @api.one
     @job
-    def action_stockout_order_done(self):
-        """ step 4 odoo调拨出库包裹单创建有赞配送出库单（在配送单分配包裹验证后调用）"""
+    def action_stockout_order_done(self, data):
+        """ 确认出库单完成 """
 
-        # PSCK=配送出库; BSCK=报损出库;PKCK=盘亏出库;DBCK=调拨出库; YHTHCK=要货退货出库
-
-        if not (self.order_type_code == 'stockout_order'
-                and self.sync_type_code == 'odoo2youzan'
-                and self.order_type == 'PSCK'):
-            return
-
-        data = {
-            'biz_bill_no': self.name,  # 包裹编号
-            'source_order_no': self.source,  # 关联配送单号
-            'order_type': 'PSCK',
-            'creator': self.owner_id.name,  # 配送单号
-            'admin_id': self.owner_id.ref,  # 配送单号
-            'create_time': self.data_order.strftime('%Y-%m-%d %H:%M:%S'),  # 配送单号
-            'warehouse_code': self.to_warehouse_code,  # 配送单号
-            'retail_source': constants.RETAIL_SOURCE,  # 配送单号
-            'remark': self.note,  # 配送单号
-
-            'logistics_company_id': self.package_id.logistics_company_id.name,  # 物流公司
-            'logistics_order_no': self.package_id.logistics_no,  # 运单号
-            'order_items': []  # 配送单号
-        }
-
-        for item in self.synchron_items:
-            data['order_items'].append({
-                'sku_code': item.sku_code,
-                'quantity': item.quantity,
-                'with_tax_cost': item.with_tax_cost,
-                'with_tax_amount': item.with_tax_amount,
-            })
-
-        yzclient = YZClient.get_default_client()
-        access_token = self.env['res.config.settings'].get_youzan_access_token()
-        debug = self.env['ir.config_parameter'].sudo().get_param(
-            'mysale_youzan.mysale_youzan_push_message_is_debug_mode')
-        try:
-            result = yzclient.invoke('youzan.retail.open.stockoutorder.create', '3.0.0', 'POST',
-                                     params=data,
-                                     files=[],
-                                     access_token=access_token,
-                                     debug=debug)
-
-        except Exception as exc:
-            self.write({
-                'refused_reason': str(exc),
-                'state': 'fail'
-            })
-            raise exc
-
-        else:
-            self.write({
-                'done_data': fields.datetime.now(),
-                'result_no': result['data'],
-                # 'state': 'done'
-            })
-
-        return True
 
     @api.model
     @job
-    def action_stockin_order_create(self, data):
+    def action_stockin_order_create_or_update(self, data):
         """ step 5.1 根据有赞配送入仓单创建odoo配送到货单(入库单消息统一处理方法） """
 
         # PSRK=配送入库 BYRK=报溢入库;PYRK=盘盈入库;CGRK=采购入库;THRK=退货入库;DBRK=调拨入库
-
-        sso = self.env['mysale.stock.synchron'].create({
-            'name': data['biz_bill_no'],
-            'source': data['source_order_no'],
-            'order_type_code': 'stockin_order',
-            'sync_type_code': 'youzan2odoo',
-            'order_type': data['order_type'],
-            'to_warehouse_code': data['warehouse_code'],
-            'note': data['remark'],
-            'refused_reason': data['refused_reason'],
-            'data_order': data['create_time'],
-            'state': 'create'
-        })
+        sso = self.search([('name', '=', data['biz_bill_no'])])
+        update = False
+        if not sso:
+            sso = self.env['mysale.stock.synchron'].create({
+                'name': data['biz_bill_no'],
+                'source': data['source_order_no'],
+                'order_type_code': 'stockin_order',
+                'sync_type_code': 'youzan2odoo',
+                'order_type': data['order_type'],
+                'to_warehouse_code': data['warehouse_code'],
+                'note': data['remark'],
+                'refused_reason': data['refused_reason'],
+                'data_order': data['create_time'],
+                'state': 'create'
+            })
 
         for item in data['order_items']:
-            product = self.env['product.product'].search([('default_code', '=', item['sku_code'])])
-            product_uom = self.env['uom.uom'].search([('name', '=', item['unit'])])
-            self.env['mysale.stock.synchron.item'].create({
-                'stock_synchron_id': sso.id,
-                'name': item['product_name'],
-                # 'supplier_code': 'apply_stock',
-                'sku_code': item['sku_code'],
-                'product_id': product.id,
-                'unit': item['unit'],
-                'product_uom_id': product_uom.id,
-                'quantity': item['quantity'],
+            sso_item = self.synchron_items.search([('default_code', '=', item['sku_code'])])
+            if not sso_item:
+                product = self.env['product.product'].search([('default_code', '=', item['sku_code'])])
+                product_uom = self.env['uom.uom'].search([('name', '=', item['unit'])])
+                self.env['mysale.stock.synchron.item'].create({
+                    'stock_synchron_id': sso.id,
+                    'name': item['product_name'],
+                    # 'supplier_code': 'apply_stock',
+                    'sku_code': item['sku_code'],
+                    'product_id': product.id,
+                    'unit': item['unit'],
+                    'product_uom_id': product_uom.id,
+                    'quantity': item['quantity'],
+                    # 'pre_out_num': item['pre_out_num'],
+                    # 'actual_out_num': item['actual_out_num'],
+                    # 'actual_in_num': item['actual_in_num'],
 
-                'with_tax_cost': item['with_tax_cost'],
-                'with_tax_amount': item['with_tax_amount'],
-                'with_tax_income': item['with_tax_income'],
-                'without_tax_amount': item['without_tax_amount'],
-                'without_tax_cost': item['without_tax_cost'],
-                'checked_delivery_cost': item['checked_delivery_cost'],
-                'delivery_cost': item['delivery_cost'],
-                'state': 'create',
-            })
+                    'with_tax_cost': item['with_tax_cost'],
+                    'with_tax_amount': item['with_tax_amount'],
+                    'with_tax_income': item['with_tax_income'],
+                    'without_tax_amount': item['without_tax_amount'],
+                    'without_tax_cost': item['without_tax_cost'],
+                    'checked_delivery_cost': item['checked_delivery_cost'],
+                    'delivery_cost': item['delivery_cost'],
+                    'state': 'create',
+                })
+
+            else:
+                sso_item.write({
+                    'quantity': item['quantity'],
+                    # 'pre_out_num': item['pre_out_num'],
+                    # 'actual_out_num': item['actual_out_num'],
+                    # 'actual_in_num': item['actual_in_num'],
+
+                    'with_tax_cost': item['with_tax_cost'],
+                    'with_tax_amount': item['with_tax_amount'],
+                    'with_tax_income': item['with_tax_income'],
+                    'without_tax_amount': item['without_tax_amount'],
+                    'without_tax_cost': item['without_tax_cost'],
+                    'checked_delivery_cost': item['checked_delivery_cost'],
+                    'delivery_cost': item['delivery_cost'],
+                })
+
+        sso.with_delay().action_stockin_order_done()
 
         return sso
 
@@ -493,7 +552,56 @@ class StockSynchron(models.Model):
         """ step 5.2 根据有赞配送入仓单创建odoo配送到货单(入库单消息统一处理方法） """
 
         # PSRK=配送入库 BYRK=报溢入库;PYRK=盘盈入库;CGRK=采购入库;THRK=退货入库;DBRK=调拨入库
-        pass
+        source_order_no = data['source_order_no']
+
+        if self.order_type == 'CGRK': # 采购入库
+            po = self.env['purchase.order'].action_youzan_purchase_order_query_and_save(source_order_no)
+            po.ensure_one()
+
+            for item in self.synchron_items:
+                po_line = po.order_lines.search([('product_id', '=', item.product_id.id)])
+                po_line_move, = po_line.move_ids  # FIXME: 默认一次采购或配送对应一次入库,如需创建欠单请重新实现
+                po_line_move.move_line_ids[0].qty_done = item.quantity
+
+                if item.quantity >= po_line.product_qty:
+                    self.state = 'done'
+
+                elif item.quantity > 0 and item.quantity < po_line.product_qty:
+                    self.state = 'partially_done'
+
+            picking, = po.picking_ids  # FIXME: 默认一次采购或配送对应一次入库,如需创建欠单请重新实现
+            picking.action_done() # 入库成功后改变采购单状态
+
+        elif self.order_type in ('PSRK', 'DBRK'): # 配送入库, 限总部仓库、电商仓、第三方仓内部调拨
+            stpo     = self.search([('name', '=', source_order_no)])
+            in_picking  = stpo.inter_picking_ids.search([('picking_type_id', '=', stpo.in_picking_type)])
+            in_picking.ensure_one()
+
+            for item in self.synchron_items:
+                stpo_in_move = in_picking.move_lines.search([('product_id', '=', item.product_id.id)])
+                stpo_in_move.move_line_ids[0].qty_done = item.quantity
+
+                if item.quantity >= stpo_in_move.product_uom_qty:
+                    self.state = 'done'
+
+                elif item.quantity > 0 and item.quantity < stpo_in_move.product_uom_qty:
+                    self.state = 'partially_done'
+
+            in_picking.action_done() # 入库成功后改变配送单状态
+
+        elif self.order_type == 'PYRK':  # 盘盈入库
+            pass
+
+        elif self.order_type == 'BYRK':  # 报溢入库
+            pass # TODO, fixme
+
+        elif self.order_type == 'THRK':  # 退货入库
+            pass # TODO, fixme
+
+
+
+
+
 
 
 

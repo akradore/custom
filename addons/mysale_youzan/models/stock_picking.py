@@ -76,10 +76,7 @@ class Picking(models.Model):
             return
 
         for move in r_picking.move_lines:
-            line = move.move_lines
-            if len(line) != 1:
-                raise ValueError('stock.move and stock.move.line are not one to one relationship.')
-
+            line, = move.move_lines
             syn_item = stock_synchron.synchron_items.search([('product_id', '=', line.product_id.id)])
             line.write({
                 'product_uom_qty': syn_item.quantity,
