@@ -11,6 +11,7 @@ from odoo.exceptions import ValidationError
 from . import auth
 from .. import constants
 from .yzclient import YZClient
+from .. import tools
 
 
 ####################################
@@ -43,6 +44,7 @@ class YZPushService(object):
 
         func_type = request_data['type']
         msg_dict = json.loads(urllib.parse.unquote(request_data['msg']))
+        tools.clean_dict(msg_dict)
 
         func_type = 'youzan_%s' % func_type.lower()
         result = getattr(self, func_type)(msg_dict)  ## exec func type
@@ -89,9 +91,9 @@ class YZPushService(object):
         return True
 
 
-    def youzan_retail_open_distribution_order_out(self, req_data):
+    def youzan_retail_open_distribution_order_to_in(self, req_data):
         """ 配送单创建待出库 """
-        self.env['stock.inter.picking'].with_delay()\
+        self.env['stock.inter.picking']\
             .action_youzan_distribution_order_query_and_save(req_data['biz_bill_no'])
 
         return True
@@ -100,14 +102,14 @@ class YZPushService(object):
     def youzan_retail_open_distribution_order_closed(self, req_data):
         """ 手动关闭配送单 """
         bill_no = req_data['biz_bill_no']
-        self.env['stock.inter.picking'].search([('name', '=', bill_no)]).action_cancel()
+        self.env['stock.inter.picking'].sudo().search([('name', '=', bill_no)]).action_cancel()
 
         return True
 
 
     def youzan_retail_open_allot_order_to_out(self, req_data):
         """ 调拨申请单审核通过 """
-        self.env['stock.inter.picking'].with_delay()\
+        self.env['stock.inter.picking']\
             .action_youzan_allot_order_query_and_save(req_data['allot_order_no'])
 
         return True
@@ -116,7 +118,7 @@ class YZPushService(object):
     def youzan_retail_open_allot_order_closed(self, req_data):
         """ 调拨申请单审核通过 """
         bill_no = req_data['allot_order_no']
-        self.env['stock.inter.picking'].search([('name', '=', bill_no)]).action_cancel()
+        self.env['stock.inter.picking'].sudo().search([('name', '=', bill_no)]).action_cancel()
 
         return True
 
@@ -124,25 +126,28 @@ class YZPushService(object):
     def youzan_retail_open_purchase_order_to_in(self, req_data):
         """ 采购申请单创建待入库 """
         order_no = req_data['purchase_order_no']
-        self.env['purchase.order'].with_delay()\
-            .action_youzan_purchase_order_query_and_save(order_no)
+        self.env['purchase.order'].action_youzan_purchase_order_query_and_save(order_no)
 
         return True
 
 
     def youzan_retail_open_stockcheck_order_create(self, req_data):
         """ 盘点单创建 """
-        order_no = req_data['biz_bill_no']
         self.env['stock.inventory'].with_delay()\
-            .action_youzan_stock_adjustment_query_and_save(order_no)
+            .action_youzan_stock_adjustment_query_and_save(
+            req_data['biz_bill_no'],
+            req_data['warehouse_code']
+        )
 
         return True
 
     def youzan_retail_open_stockcheck_order_update(self, req_data):
         """ 盘点单创建 """
-        order_no = req_data['biz_bill_no']
         self.env['stock.inventory'].with_delay()\
-            .action_youzan_stock_adjustment_query_and_save(order_no)
+            .action_youzan_stock_adjustment_query_and_save(
+            req_data['biz_bill_no'],
+            req_data['warehouse_code']
+        )
 
         return True
 

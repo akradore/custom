@@ -140,7 +140,7 @@ class StockInterPicking(models.Model):
         int_loc = self.env.ref('stock_inter_transfer.location_inter_transit')
         if self.out_picking_type and self.in_picking_type and self.out_picking_type.default_location_dest_id and self.out_picking_type.default_location_dest_id == self.in_picking_type.default_location_src_id:
             int_loc = self.out_picking_type.default_location_dest_id
-
+        
         if self.inter_type == '2step':
             in_loc = int_loc
         picking_data = self._prepare_inter_picking(self.out_picking_type, out_loc, in_loc, self.order_date)
@@ -290,8 +290,8 @@ class StockInterLine(models.Model):
     def _create_stock_moves(self, picking):
         moves = self.env['stock.move']
         done = self.env['stock.move'].browse()
-        assigned_moves = self.env['stock.move']
-        partially_available_moves = self.env['stock.move']
+        # assigned_moves = self.env['stock.move']
+        # partially_available_moves = self.env['stock.move']
         for line in self:
             val = line._prepare_stock_moves(picking)
             move = moves.create(val)
@@ -341,7 +341,7 @@ class StockInterLine(models.Model):
         # picking._check_entire_pack()
 
         picking.action_assign()
-        for line in picking.mapped('move_lines').move_line_ids:
+        for line in picking.mapped('move_lines').mapped('move_line_ids'):
             inter_line = self.filtered(lambda l:l.product_id.id == line.product_id.id)
             line.write({'lot_id':inter_line.lot_id.id,'qty_done':line.product_uom_qty})
 

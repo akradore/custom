@@ -9,6 +9,7 @@ import uuid
 from odoo.http import request
 
 from .. import constants
+from .. import tools
 
 _logger = logging.getLogger(__name__)
 
@@ -64,6 +65,7 @@ class YZClient:
             raise Exception('Invalid Youzan Response (status, text): %s,%s' %( resp.status_code, resp.content))
 
         result = resp.json()
+        tools.clean_dict(result)
         if 'gw_err_resp' in result or not (result['code'] == 200 and result['success']):
             ##TODO need to notify admin
             raise Exception('Invalid Youzan Response: %s' %resp.content)

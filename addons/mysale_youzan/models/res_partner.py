@@ -6,7 +6,7 @@ from .. import constants
 from ..yzsdk.yzclient import YZClient
 
 class Partner(models.Model):
-    _inherits = "res.partner"
+    _inherit = "res.partner"
 
     @api.model
     def action_youzan_supplier_query_and_save(self, supplier_code, supplier_name):
@@ -29,22 +29,22 @@ class Partner(models.Model):
             data = result['data']
 
             for sup in data.get('suppliers', []):
-                supplier = self.create({
+                supplier = self.create([{
                     'name': sup['supplier_name'],
                     'ref': sup['supplier_code'],
                     'supplier': True,
-                    'phone': sup['phone'],
-                    'email': sup['email'],
-                    'fax': sup['fax'],
-                    'comment': sup['remark'],
-                    'notes': 'weixin：%s, QQ：%s' % (sup['wei_xin'], sup['qq']),
-                })
+                    'phone': sup.get('phone'),
+                    'email': sup.get('email'),
+                    'fax': sup.get('fax'),
+                    'comment': sup.get('remark'),
+                    'notes': 'weixin：%s, QQ：%s' % (sup.get('wei_xin'), sup.get('qq')),
+                }])
 
                 supplier.write({
                     'child_ids': [(0, 0, {
                         'name': sup['contacts'],
-                        'ref': sup['contacts_phone'],
-                        'mobile': sup['contacts_phone'],
+                        'ref': sup.get('contacts_phone'),
+                        'mobile': sup.get('contacts_phone'),
                         'type': 'contact',
                     })]
                 })

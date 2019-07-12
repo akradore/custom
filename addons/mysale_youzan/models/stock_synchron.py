@@ -75,11 +75,11 @@ class StockSynchron(models.Model):
         debug = self.env['ir.config_parameter'].sudo().get_param(
             'mysale_youzan.mysale_youzan_push_message_is_debug_mode')
         try:
-            result = yzclient.invoke('youzan.retail.open.stock.adjust', '3.0.0', 'POST',
-                                     params=data,
-                                     files=[],
-                                     access_token=access_token,
-                                     debug=debug)
+            yzclient.invoke('youzan.retail.open.stock.adjust', '3.0.0', 'POST',
+                             params=data,
+                             files=[],
+                             access_token=access_token,
+                             debug=debug)
         except Exception as exc:
             self.write({
                 'refused_reason': str(exc),
@@ -590,6 +590,7 @@ class StockSynchron(models.Model):
             in_picking.action_done() # 入库成功后改变配送单状态
 
         elif self.order_type == 'PYRK':  # 盘盈入库
+            # 盘盈盘亏，不直接更新仓库商品数量，由盘点确认后自动更新
             pass
 
         elif self.order_type == 'BYRK':  # 报溢入库

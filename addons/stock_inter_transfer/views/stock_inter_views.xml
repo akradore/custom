@@ -46,13 +46,13 @@
                     </div>
                     <group>
                         <group>
-                            <field name="partner_id"/>
                             <field name="inter_type2"/>
                             <field name="out_location" required="1" options="{'no_create_edit':True,'no_create':True}" domain="[('usage','=','internal')]"/>
                             <field name="out_picking_type" required="1" options="{'no_create_edit':True,'no_create':True}" domain="[('code','=','internal')]"/>
                             <field name="order_date"/>
                             <field name="user_id" required="1" />
                             <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
+                            <field name="partner_id"/>
                         </group>
                         <group>
                         	<field name="inter_type" required="1" />

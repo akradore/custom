@@ -20,7 +20,7 @@
     'version': '0.1',
 
     # any module necessary for this one to work correctly
-    'depends': ['sale_management', 'stock', 'stock_inter_transfer' 'queue_job'],
+    'depends': ['sale_management', 'stock', 'stock_inter_transfer', 'queue_job'],
 
     # always loaded
     'data': [

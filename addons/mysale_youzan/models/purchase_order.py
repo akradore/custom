@@ -4,19 +4,24 @@
 from datetime import datetime
 
 from odoo import api, fields, models, SUPERUSER_ID, _
+from odoo.addons.queue_job.job import job
 
 from .. import constants
 from ..yzsdk.yzclient import YZClient
 
 
 class PurchaseOrder(models.Model):
-    _inherits = "purchase.order"
+    _inherit = "purchase.order"
 
     @api.model
+    @job
     def action_youzan_purchase_order_query_and_save(self, order_no):
         """ 复制有赞采购单到odoo """
 
-        po = self.env['purchase.order'].search([('origin', '=', order_no)])
+        PurchaseOrder = self.env['purchase.order'].sudo()
+        ResPartner    = self.env['res.partner'].sudo()
+        Product = self.env['product.product'].sudo()
+        po = PurchaseOrder.search([('origin', '=', order_no)])
         if po:
             return po
 
@@ -35,11 +40,11 @@ class PurchaseOrder(models.Model):
 
         supplier_code = data['supplier_code']
         supplier_name = data['supplier_name']
-        supplier = self.env['res.partner'].action_youzan_supplier_query_and_update(supplier_code, supplier_name)
+        supplier = ResPartner.action_youzan_supplier_query_and_save(supplier_code, supplier_name)
 
         order_lines = []
         sku_codes = [i['sku_code'] for i in data['order_items']]
-        product_list = self.env['product.product'].action_youzan_product_query_and_save(sku_codes)
+        product_list = Product.action_youzan_product_query_and_save(sku_codes)
         product_dict = dict((p.default_code, p) for p in product_list)
 
         for line in data['order_items']:
@@ -53,9 +58,9 @@ class PurchaseOrder(models.Model):
                 'date_planned': data['estimated_arrival_time'],
             }))
 
-        po = self.env['purchase.order'].create({
-            'name': '%s采购(原单号：%s)'%(data['warehouse_name'], data['purchase_order_no']),
-            'origin': data['purchase_order_no'],
+        po = PurchaseOrder.create({
+            'name': '%s采购(%s)'%(data['warehouse_name'], data['purchase_order_no']),
+            'origin': order_no,
             'date_order': fields.datetime.now(),
             # 'date_approve': data[],
             'partner_id': supplier.id,
@@ -64,6 +69,8 @@ class PurchaseOrder(models.Model):
             'order_line': order_lines
         })
 
+        PurchaseOrder.search([('origin', '=', order_no)]).action_youzan_purchase_order_done()
+
         return po
 
 
@@ -71,7 +78,10 @@ class PurchaseOrder(models.Model):
     @api.multi
     def action_youzan_purchase_order_done(self):
         """ 确认有赞采购单到货 """
-        pass
+        for po in self:
+        # Confirm the purchase order.
+            po.button_confirm()
+
 
 
 
