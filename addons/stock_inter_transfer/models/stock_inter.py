@@ -54,6 +54,9 @@ class StockInterPicking(models.Model):
     user_id = fields.Many2one('res.users', string=u'责任人', readonly=True, copy=True,
                               states={'draft': [('readonly', False)]}, default=lambda self: self.env.user)
 
+    
+    
+    
     inter_lines = fields.One2many('stock.inter.line', 'order_id', string=u'调拨明细',
                                   states={'cancel': [('readonly', True)], 'done': [('readonly', True)]}, copy=True)
     inter_picking_ids = fields.Many2many('stock.picking', compute="_compute_inter_picking", string=u'仓库调拨单', copy=False,

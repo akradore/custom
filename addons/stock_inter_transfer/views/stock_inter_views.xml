@@ -1,40 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-    <odoo>
+<odoo>
 
-		<record id="stock_inter_picking_form_view" model="ir.ui.view">  
-            <field name="name">Stock Inter Transfer form View</field>  
-            <field name="model">stock.inter.picking</field>  
-            <field eval="25" name="priority"/>  
-            <field name="arch" type="xml">  
-                <form string="调拨单">
-                    <header>
-                    	<button name="action_progress" states="draft" string="确认下单" type="object"  class="oe_highlight"/>
+    <record id="stock_inter_picking_form_view" model="ir.ui.view">
+        <field name="name">Stock Inter Transfer form View</field>
+        <field name="model">stock.inter.picking</field>
+        <field eval="25" name="priority"/>
+        <field name="arch" type="xml">
+            <form string="调拨单">
+                <header>
+                    <button name="action_progress" states="draft" string="确认下单" type="object" class="oe_highlight"/>
 
-                        <button name="action_inter_picking" string="调拨库单" type="object" class="btn-primary" 
-                        	confirm="请确保调拨明细行的批次、数量等填写正确，系统将据此自动创建调拨出库、入库单！" 
-                        	attrs="{'invisible':['|',('state', 'in', ('draft','done','cancel')),('inter_picking_count', '&gt;',0)]}"/>
-                        <button name="action_inter_picking" string="调拨库单" type="object" 
-                        	confirm="请确保调拨明细行的批次、数量等填写正确，系统将据此自动创建调拨出库、入库单！" 
-                        	attrs="{'invisible':['|',('state', 'in', ('draft','done','cancel')),('inter_picking_count', '&lt;',1)]}"/>
-                        
-                    	<button name="action_done"  string="调拨结单" type="object" class="btn-primary" 
-                    		confirm="结单前请确保本单关联的原料出库单、成品入库单都已经完成！" 
-                    		attrs="{'invisible':['|',('state', 'in', ('draft','done','cancel')),('inter_picking_count', '&lt;',1)]}"/>
-                  		
-                    	<button name="action_cancel" states="draft,progress" string="订单取消" type="object" 
-                    		confirm="订单取消前请确保本单关联的所有调拨出、入库单都已经取消并删除！"/>
-                    	<button name="action_reset" states="cancel" string="重置为草稿" type="object" 
-                    		confirm="如果本单有关联的调拨出、入库单，重置为草稿后请注意删除那些关联单！"/>
-                    	<field name="state" widget="statusbar" statusbar_visible="draft,progress,done"/>
-                    </header>
-                    <sheet>
-					<div class="oe_button_box" name="button_box">
-                        <button type="object"  name="action_view_out_lot" states="draft,progress" class="oe_stat_button"
-                            icon="fa-pencil-square-o" string="批次查询" />
+                    <button name="action_inter_picking" string="调拨库单" type="object" class="btn-primary" confirm="请确保调拨明细行的批次、数量等填写正确，系统将据此自动创建调拨出库、入库单！" attrs="{'invisible':['|',('state', 'in', ('draft','done','cancel')),('inter_picking_count', '&gt;',0)]}"/>
+                    <button name="action_inter_picking" string="调拨库单" type="object" confirm="请确保调拨明细行的批次、数量等填写正确，系统将据此自动创建调拨出库、入库单！" attrs="{'invisible':['|',('state', 'in', ('draft','done','cancel')),('inter_picking_count', '&lt;',1)]}"/>
+
+                    <button name="action_done" string="调拨结单" type="object" class="btn-primary" confirm="结单前请确保本单关联的原料出库单、成品入库单都已经完成！" attrs="{'invisible':['|',('state', 'in', ('draft','done','cancel')),('inter_picking_count', '&lt;',1)]}"/>
+
+                    <button name="action_cancel" states="draft,progress" string="订单取消" type="object" confirm="订单取消前请确保本单关联的所有调拨出、入库单都已经取消并删除！"/>
+                    <button name="action_reset" states="cancel" string="重置为草稿" type="object" confirm="如果本单有关联的调拨出、入库单，重置为草稿后请注意删除那些关联单！"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button type="object" name="action_view_out_lot" states="draft,progress" class="oe_stat_button" icon="fa-pencil-square-o" string="批次查询" />
 
 
-                        <button type="object"  name="action_view_inter_picking" class="oe_stat_button"
-                            icon="fa-pencil-square-o" attrs="{'invisible':['|',('state', 'in', ('draft',)),('inter_picking_count','=',0)]}">
+                        <button type="object" name="action_view_inter_picking" class="oe_stat_button" icon="fa-pencil-square-o" attrs="{'invisible':['|',('state', 'in', ('draft',)),('inter_picking_count','=',0)]}">
                             <field name="inter_picking_count" widget="statinfo" string="调出调入单"/>
                             <field name='inter_picking_ids' invisible="1"/>
                         </button>
@@ -55,10 +45,9 @@
                             <field name="partner_id"/>
                         </group>
                         <group>
-                        	<field name="inter_type" required="1" />
-                        	<field name="in_location" required="1" options="{'no_create_edit':True,'no_create':True}" domain="[('usage','=','internal')]"/>
-                            <field name="in_picking_type"  options="{'no_create_edit':True,'no_create':True}" 
-                            	attrs="{'invisible':[('inter_type', '!=', '2step')], 'required':[('inter_type', '=', '2step')] }" domain="[('code','=','internal')]"/>
+                            <field name="inter_type" required="1" />
+                            <field name="in_location" required="1" options="{'no_create_edit':True,'no_create':True}" domain="[('usage','=','internal')]"/>
+                            <field name="in_picking_type" options="{'no_create_edit':True,'no_create':True}" attrs="{'invisible':[('inter_type', '!=', '2step')], 'required':[('inter_type', '=', '2step')] }" domain="[('code','=','internal')]"/>
                             <field name="validity_date"/>
                             <field name="notes"/>
                             <field name="active" invisible="1"/>
@@ -66,9 +55,9 @@
                     </group>
                     <notebook>
                         <page string="原料">
-                            <field name="inter_lines" mode="tree" >
-                                 <!-- <tree string="调拨明细行" editable="bottom" decoration-muted="in_picking_ids" > -->
-                                 <tree string="调拨明细行" editable="bottom">
+                            <field name="inter_lines" mode="tree">
+                                <!-- <tree string="调拨明细行" editable="bottom" decoration-muted="in_picking_ids"> -->
+                                <tree string="调拨明细行" editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="lot_id" options="{'no_create_edit':True,'no_create':True}" />
                                     <field name="package_id" options="{'no_create_edit':True,'no_create':True}" />
@@ -82,71 +71,69 @@
                             </field>
                         </page>
                     </notebook>
-                    </sheet>
-                </form>
-            </field>  
-        </record>  
+                </sheet>
+            </form>
+        </field>
+    </record>
 
-    	<record id="stock_inter_picking_tree_view" model="ir.ui.view">
-            <field name="name">stock.inter.picking.tree</field>
-            <field name="model">stock.inter.picking</field>
-            <field name="arch" type="xml">
-                <tree string="调拨单列表" default_order="name desc">
-                    <field name="name"/>
-                    <field name="partner_id"/>
-                    <field name="inter_type2"/>
-                    <field name="order_date"/>
-                    <field name="out_location"/>
-                    <field name="validity_date"/>
-                    <field name="state"/>
-                </tree>
-            </field>
-        </record>
+    <record id="stock_inter_picking_tree_view" model="ir.ui.view">
+        <field name="name">stock.inter.picking.tree</field>
+        <field name="model">stock.inter.picking</field>
+        <field name="arch" type="xml">
+            <tree string="调拨单列表" default_order="name desc">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="inter_type2"/>
+                <field name="order_date"/>
+                <field name="out_location"/>
+                <field name="validity_date"/>
+                <field name="state"/>
+            </tree>
+        </field>
+    </record>
 
-    	<record id="stock_inter_picking_action" model="ir.actions.act_window">  
-            <field name="name">仓库调拨单</field>
-            <field name="res_model">stock.inter.picking</field>
-            <field name="view_type">form</field>
-            <field name="view_mode">tree,form</field>
-            <field name="help" type="html">  
-                <p class="oe_view_nocontent_create">  
+    <record id="stock_inter_picking_action" model="ir.actions.act_window">
+        <field name="name">仓库调拨单</field>
+        <field name="res_model">stock.inter.picking</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="oe_view_nocontent_create">  
                     Click here to create new record.  
-                </p>
-            </field>
-        </record> 
+            </p>
+        </field>
+    </record>
 
-    	<record id="stock_inter_type_tree_view" model="ir.ui.view">
-            <field name="name">stock.inter.type.tree</field>
-            <field name="model">stock.inter.type</field>
-            <field name="arch" type="xml">
-                <tree string="调拨单类型" editable="top">
-                    <field name="code" invisible='1'/>
-                    <field name="name"/>
-                    <field name="inter_type"/>
-                    <field name="out_location"/>
-                    <field name="in_location"/>
-                    <field name="out_picking_type"/>
-                    <field name="in_picking_type"/>
-                    <field name="duration"/>
-                </tree>
-            </field>
-        </record>
+    <record id="stock_inter_type_tree_view" model="ir.ui.view">
+        <field name="name">stock.inter.type.tree</field>
+        <field name="model">stock.inter.type</field>
+        <field name="arch" type="xml">
+            <tree string="调拨单类型" editable="top">
+                <field name="code" invisible='1'/>
+                <field name="name"/>
+                <field name="inter_type"/>
+                <field name="out_location"/>
+                <field name="in_location"/>
+                <field name="out_picking_type"/>
+                <field name="in_picking_type"/>
+                <field name="duration"/>
+            </tree>
+        </field>
+    </record>
 
-    	<record id="stock_inter_type_action" model="ir.actions.act_window">  
-            <field name="name">调拨单类型</field>
-            <field name="res_model">stock.inter.type</field>
-            <field name="view_type">form</field>
-            <field name="view_mode">tree</field>
-            <field name="help" type="html">  
-                <p class="oe_view_nocontent_create">  
+    <record id="stock_inter_type_action" model="ir.actions.act_window">
+        <field name="name">调拨单类型</field>
+        <field name="res_model">stock.inter.type</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">tree</field>
+        <field name="help" type="html">
+            <p class="oe_view_nocontent_create">  
                     Click here to create new record.  
-                </p>
-            </field>
-        </record> 
-        
-    	<menuitem action="stock_inter_picking_action" id="menu_stock_inter_picking" name="仓库调拨单" 
-            parent="stock.menu_stock_warehouse_mgmt" sequence="7"/>
-    	<menuitem action="stock_inter_type_action" id="menu_stock_inter_type" name="调拨类别" 
-            parent="stock.menu_warehouse_config" sequence="8"/>
-            
-    </odoo>
+            </p>
+        </field>
+    </record>
+
+    <menuitem action="stock_inter_picking_action" id="menu_stock_inter_picking" name="仓库调拨单" parent="stock.menu_stock_warehouse_mgmt" sequence="7"/>
+    <menuitem action="stock_inter_type_action" id="menu_stock_inter_type" name="调拨类别" parent="stock.menu_warehouse_config" sequence="8"/>
+
+</odoo>
